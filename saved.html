@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Code | Infinity-Coder</title>
+    <style>
+        :root {
+            --primary: #6e48aa;
+            --secondary: #9d50bb;
+            --dark: #1a1a2e;
+            --darker: #0f0f1a;
+            --light: #f8f9fa;
+            --lighter: #ffffff;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --code-bg: #16213e;
+            --sidebar-width: 280px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--darker);
+            color: var(--light);
+            min-height: 100vh;
+            display: flex;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--dark);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 1.5rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+        
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header img {
+            height: 36px;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 1.3rem;
+            background: linear-gradient(to right, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800;
+        }
+        
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--light);
+        }
+        
+        .nav-item.active {
+            background: rgba(110, 72, 170, 0.2);
+            color: var(--light);
+        }
+        
+        .nav-item i {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .user-email {
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        
+        .user-settings {
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        
+        .user-profile:hover .user-settings {
+            opacity: 1;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .search-bar {
+            position: relative;
+            width: 300px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            color: var(--light);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(110, 72, 170, 0.3);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .snippets-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .filter-btn {
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            color: var(--light);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .filter-btn.active {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-color: transparent;
+        }
+        
+        .snippets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .snippet-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .snippet-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(157, 80, 187, 0.3);
+        }
+        
+        .snippet-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .snippet-title {
+            font-weight: 600;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .snippet-language {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.3rem 0.6rem;
+            border-radius: 50px;
+        }
+        
+        .snippet-content {
+            padding: 1rem;
+            max-height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .snippet-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(to bottom, transparent, rgba(26, 26, 46, 0.9));
+        }
+        
+        .snippet-code {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 0.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .snippet-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .snippet-date {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .snippet-actions {
+            display: flex;
+            gap: 0.8rem;
+        }
+        
+        .snippet-action {
+            background: none;
+            border: none;
+            color: var(--light);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .snippet-action:hover {
+            opacity: 1;
+        }
+        
+        /* Language icons */
+        .language-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        
+        .python { background: #3572A5; }
+        .javascript { background: #F1E05A; }
+        .java { background: #B07219; }
+        .csharp { background: #178600; }
+        .php { background: #4F5D95; }
+        .ruby { background: #701516; }
+        .go { background: #00ADD8; }
+        .rust { background: #DEA584; }
+        .typescript { background: #3178C6; }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            :root {
+                --sidebar-width: 250px;
+            }
+            
+            .snippets-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+            
+            .search-bar {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 1.5rem;
+            }
+            
+            .snippets-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .snippets-actions {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="https://via.placeholder.com/36" alt="Infinity-Coder Logo">
+            <h2>Infinity-Coder</h2>
+        </div>
+        
+        <div class="sidebar-nav">
+            <a href="chat.html" class="nav-item">
+                <i class="fas fa-comment-dots"></i>
+                <span>Chat</span>
+            </a>
+            <a href="saved.html" class="nav-item active">
+                <i class="fas fa-code"></i>
+                <span>Saved Code</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-folder"></i>
+                <span>Projects</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar">JD</div>
+                <div class="user-info">
+                    <div class="user-name">John Doe</div>
+                    <div class="user-email">john@example.com</div>
+                </div>
+                <i class="fas fa-cog user-settings"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Saved Code Snippets</h1>
+            <div class="search-bar">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" placeholder="Search snippets...">
+            </div>
+        </div>
+        
+        <div class="snippets-actions">
+            <button class="filter-btn active">
+                <i class="fas fa-star"></i> All Snippets
+            </button>
+            <button class="filter-btn">
+                <i class="fab fa-python"></i> Python
+            </button>
+            <button class="filter-btn">
+                <i class="fab fa-js"></i> JavaScript
+            </button>
+            <button class="filter-btn">
+                <i class="fas fa-plus"></i> New Snippet
+            </button>
+        </div>
+        
+        <div class="snippets-grid">
+            <!-- Snippet 1 -->
+            <div class="snippet-card">
+                <div class="snippet-header">
+                    <div class="snippet-title">DataFrame Analysis</div>
+                    <div class="snippet-language">
+                        <div class="language-icon python"></div>
+                        <span>Python</span>
+                    </div>
+                </div>
+                <div class="snippet-content">
+                    <div class="snippet-code"># Analyze DataFrame
+for col in df.columns:
+    print(f"Column: {col}")
+    print(f"Unique values: {df[col].nunique()}")
+    print(f"Missing values: {df[col].isna().sum()}")
+    print("------")</div>
+                </div>
+                <div class="snippet-footer">
+                    <div class="snippet-date">2 days ago</div>
+                    <div class="snippet-actions">
+                        <button class="snippet-action" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="snippet-action" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Snippet 2 -->
+            <div class="snippet-card">
+                <div class="snippet-header">
+                    <div class="snippet-title">React Component</div>
+                    <div class="snippet-language">
+                        <div class="language-icon javascript"></div>
+                        <span>JavaScript</span>
+                    </div>
+                </div>
+                <div class="snippet-content">
+                    <div class="snippet-code">function MyComponent({ props }) {
+  const [state, setState] = useState(null);
+
+  useEffect(() => {
+    // Fetch data
+    fetchData().then(data => {
+      setState(data);
+    });
+  }, []);
+
+  return (
+    &lt;div className="my-component"&gt;
+      {state && &lt;ChildComponent data={state} /&gt;}
+    &lt;/div&gt;
+  );
+}</div>
+                </div>
+                <div class="snippet-footer">
+                    <div class="snippet-date">1 week ago</div>
+                    <div class="snippet-actions">
+                        <button class="snippet-action" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="snippet-action" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Snippet 3 -->
+            <div class="snippet-card">
+                <div class="snippet-header">
+                    <div class="snippet-title">API Fetch</div>
+                    <div class="snippet-language">
+                        <div class="language-icon typescript"></div>
+                        <span>TypeScript</span>
+                    </div>
+                </div>
+                <div class="snippet-content">
+                    <div class="snippet-code">interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+async function fetchUsers(): Promise&lt;User[]&gt; {
+  const response = await fetch('/api/users');
+  if (!response.ok) {
+    throw new Error('Failed to fetch users');
+  }
+  return await response.json();
+}</div>
+                </div>
+                <div class="snippet-footer">
+                    <div class="snippet-date">3 weeks ago</div>
+                    <div class="snippet-actions">
+                        <button class="snippet-action" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="snippet-action" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Snippet 4 -->
+            <div class="snippet-card">
+                <div class="snippet-header">
+                    <div class="snippet-title">Sort Algorithm</div>
+                    <div class="snippet-language">
+                        <div class="language-icon python"></div>
+                        <span>Python</span>
+                    </div>
+                </div>
+                <div class="snippet-content">
+                    <div class="snippet-code">def quicksort(arr):
+    if len(arr) &lt;= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x &lt; pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x &gt; pivot]
+    return quicksort(left) + middle + quicksort(right)</div>
+                </div>
+                <div class="snippet-footer">
+                    <div class="snippet-date">1 month ago</div>
+                    <div class="snippet-actions">
+                        <button class="snippet-action" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="snippet-action" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Snippet 5 -->
+            <div class="snippet-card">
+                <div class="snippet-header">
+                    <div class="snippet-title">Form Validation</div>
+                    <div class="snippet-language">
+                        <div class="language-icon javascript"></div>
+                        <span>JavaScript</span>
+                    </div>
+                </div>
+                <div class="snippet-content">
+                    <div class="snippet-code">function validateForm(formData) {
+  const errors = {};
+  
+  if (!formData.name.trim()) {
+    errors.name = 'Name is required';
+  }
+  
+  if (!formData.email) {
+    errors.email = 'Email is required';
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    errors.email = 'Email is invalid';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+}</div>
+                </div>
+                <div class="snippet-footer">
+                    <div class="snippet-date">2 months ago</div>
+                    <div class="snippet-actions">
+                        <button class="snippet-action" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="snippet-action" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Snippet 6 -->
+            <div class="snippet-card">
+                <div class="snippet-header">
+                    <div class="snippet-title">Database Connection</div>
+                    <div class="snippet-language">
+                        <div class="language-icon python"></div>
+                        <span>Python</span>
+                    </div>
+                </div>
+                <div class="snippet-content">
+                    <div class="snippet-code">import psycopg2
+from contextlib import contextmanager
+
+@contextmanager
+def db_connection():
+    conn = psycopg2.connect(
+        dbname="mydb",
+        user="user",
+        password="pass",
+        host="localhost"
+    )
+    try:
+        yield conn
+    finally:
+        conn.close()</div>
+                </div>
+                <div class="snippet-footer">
+                    <div class="snippet-date">3 months ago</div>
+                    <div class="snippet-actions">
+                        <button class="snippet-action" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="snippet-action" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+  // Your Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAw-tAvYlnjCqw-a2XRTptnakifTbTLqzA",
+    authDomain: "ai-chat-bot-6a570.firebaseapp.com",
+    projectId: "ai-chat-bot-6a570",
+    storageBucket: "ai-chat-bot-6a570.firebasestorage.app",
+    messagingSenderId: "714149215086",
+    appId: "1:714149215086:web:5229fc8ecee79209ea5f7f"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+</script>
+    <script>
+        // Filter snippets by language
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // In a real app, you would filter the snippets here
+                console.log(`Filtering by ${button.textContent.trim()}`);
+            });
+        });
+        
+        // Search functionality
+        const searchInput = document.querySelector('.search-input');
+        
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            // In a real app, you would filter snippets by search term
+            console.log(`Searching for: ${searchTerm}`);
+        });
+        
+        // Mobile sidebar toggle (for smaller screens)
+        // You would implement this similarly to the chat.html page
+    </script>
+</body>
+</html>
